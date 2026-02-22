@@ -11,7 +11,6 @@ import {
 } from "react-aria-components";
 import { flushSync } from "react-dom";
 import { composeTailwindRenderProps } from "~/lib/react-aria-utils";
-import "./Toast.css";
 
 // Define the type for your toast content. This interface defines the properties of your toast content, affecting what you
 // pass to the queue calls as arguments.
