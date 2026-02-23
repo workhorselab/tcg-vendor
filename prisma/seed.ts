@@ -12,7 +12,6 @@ async function main() {
     create: {
       id: "user_alice_001",
       name: "Alice Martinez",
-      username: "alice_cards",
       email: "alice@tradeup.io",
       account_status: "active",
     },
@@ -24,13 +23,12 @@ async function main() {
     create: {
       id: "user_bob_002",
       name: "Bob Kim",
-      username: "bob_slabs",
       email: "bob@tradeup.io",
       account_status: "active",
     },
   });
 
-  console.log(`Created users: ${alice.username}, ${bob.username}`);
+  console.log(`Created users: ${alice.name}, ${bob.name}`);
 
   // ─── Assets (Alice) ────────────────────────────────
 
