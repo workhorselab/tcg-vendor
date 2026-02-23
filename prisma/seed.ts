@@ -10,6 +10,8 @@ async function main() {
     where: { email: "alice@tradeup.io" },
     update: {},
     create: {
+      id: "user_alice_001",
+      name: "Alice Martinez",
       username: "alice_cards",
       email: "alice@tradeup.io",
       account_status: "active",
@@ -20,6 +22,8 @@ async function main() {
     where: { email: "bob@tradeup.io" },
     update: {},
     create: {
+      id: "user_bob_002",
+      name: "Bob Kim",
       username: "bob_slabs",
       email: "bob@tradeup.io",
       account_status: "active",
@@ -32,7 +36,7 @@ async function main() {
 
   const charizard = await prisma.asset.create({
     data: {
-      user_id: alice.user_id,
+      user_id: alice.id,
       asset_type: "graded_card",
       notes: "Charizard VMAX - Shining Fates 074/072 - PSA 10",
       metadata: {
@@ -49,7 +53,7 @@ async function main() {
 
   const umbreon = await prisma.asset.create({
     data: {
-      user_id: alice.user_id,
+      user_id: alice.id,
       asset_type: "graded_card",
       notes: "Umbreon VMAX Alt Art - Evolving Skies 215/203 - CGC 9.5",
       metadata: {
@@ -66,7 +70,7 @@ async function main() {
 
   const pikachu = await prisma.asset.create({
     data: {
-      user_id: alice.user_id,
+      user_id: alice.id,
       asset_type: "raw_card",
       notes: "Pikachu VMAX - Vivid Voltage 044/185",
       metadata: {
@@ -81,7 +85,7 @@ async function main() {
 
   const eeveeHeroes = await prisma.asset.create({
     data: {
-      user_id: alice.user_id,
+      user_id: alice.id,
       asset_type: "sealed_product",
       notes: "Eevee Heroes Booster Box (Japanese)",
       metadata: {
@@ -96,7 +100,7 @@ async function main() {
 
   const mewtwo = await prisma.asset.create({
     data: {
-      user_id: alice.user_id,
+      user_id: alice.id,
       asset_type: "raw_card",
       notes: "Mewtwo GX - Shining Legends 039/073",
       metadata: {
@@ -113,7 +117,7 @@ async function main() {
 
   const lugia = await prisma.asset.create({
     data: {
-      user_id: bob.user_id,
+      user_id: bob.id,
       asset_type: "graded_card",
       notes: "Lugia V Alt Art - Silver Tempest 186/195 - PSA 10",
       metadata: {
@@ -130,7 +134,7 @@ async function main() {
 
   const rayquaza = await prisma.asset.create({
     data: {
-      user_id: bob.user_id,
+      user_id: bob.id,
       asset_type: "graded_guard",
       notes: "Rayquaza VMAX Alt Art - Evolving Skies 218/203 - BGS 9.5",
       metadata: {
@@ -147,7 +151,7 @@ async function main() {
 
   const crownZenith = await prisma.asset.create({
     data: {
-      user_id: bob.user_id,
+      user_id: bob.id,
       asset_type: "sealed_product",
       notes: "Crown Zenith Elite Trainer Box",
       metadata: {
@@ -162,7 +166,7 @@ async function main() {
 
   const rawMew = await prisma.asset.create({
     data: {
-      user_id: bob.user_id,
+      user_id: bob.id,
       asset_type: "raw_card",
       notes: "Mew VMAX - Fusion Strike 114/264",
       metadata: {
@@ -182,7 +186,7 @@ async function main() {
   // Alice bought Charizard VMAX
   const txBuyCharizard = await prisma.transaction.create({
     data: {
-      user_id: alice.user_id,
+      user_id: alice.id,
       transaction_type: "buy",
       total_amount: 350.0,
       transaction_fees_amount: 12.5,
@@ -196,8 +200,8 @@ async function main() {
 
   await prisma.transactionAsset.create({
     data: {
-      transaction_id: txBuyCharizard.transaction_id,
-      asset_id: charizard.asset_id,
+      transaction_id: txBuyCharizard.id,
+      asset_id: charizard.id,
       role: "incoming",
       market_value_amount: 380.0,
       agreed_value_amount: 350.0,
@@ -208,7 +212,7 @@ async function main() {
   // Alice sold Mewtwo GX
   const txSellMewtwo = await prisma.transaction.create({
     data: {
-      user_id: alice.user_id,
+      user_id: alice.id,
       transaction_type: "sell",
       total_amount: 28.5,
       transaction_fees_amount: 3.75,
@@ -222,8 +226,8 @@ async function main() {
 
   await prisma.transactionAsset.create({
     data: {
-      transaction_id: txSellMewtwo.transaction_id,
-      asset_id: mewtwo.asset_id,
+      transaction_id: txSellMewtwo.id,
+      asset_id: mewtwo.id,
       role: "outgoing",
       market_value_amount: 30.0,
       agreed_value_amount: 28.5,
@@ -234,7 +238,7 @@ async function main() {
   // Alice bought Umbreon + Pikachu in one transaction
   const txBuyBundle = await prisma.transaction.create({
     data: {
-      user_id: alice.user_id,
+      user_id: alice.id,
       transaction_type: "buy",
       total_amount: 385.0,
       transaction_fees_amount: 0,
@@ -249,16 +253,16 @@ async function main() {
   await prisma.transactionAsset.createMany({
     data: [
       {
-        transaction_id: txBuyBundle.transaction_id,
-        asset_id: umbreon.asset_id,
+        transaction_id: txBuyBundle.id,
+        asset_id: umbreon.id,
         role: "incoming",
         market_value_amount: 340.0,
         agreed_value_amount: 340.0,
         fees_amount: 0,
       },
       {
-        transaction_id: txBuyBundle.transaction_id,
-        asset_id: pikachu.asset_id,
+        transaction_id: txBuyBundle.id,
+        asset_id: pikachu.id,
         role: "incoming",
         market_value_amount: 50.0,
         agreed_value_amount: 45.0,
@@ -270,7 +274,7 @@ async function main() {
   // Bob bought Lugia
   const txBuyLugia = await prisma.transaction.create({
     data: {
-      user_id: bob.user_id,
+      user_id: bob.id,
       transaction_type: "buy",
       total_amount: 210.0,
       transaction_fees_amount: 5.0,
@@ -284,8 +288,8 @@ async function main() {
 
   await prisma.transactionAsset.create({
     data: {
-      transaction_id: txBuyLugia.transaction_id,
-      asset_id: lugia.asset_id,
+      transaction_id: txBuyLugia.id,
+      asset_id: lugia.id,
       role: "incoming",
       market_value_amount: 220.0,
       agreed_value_amount: 210.0,
@@ -296,7 +300,7 @@ async function main() {
   // Bob sold Crown Zenith ETB
   const txSellETB = await prisma.transaction.create({
     data: {
-      user_id: bob.user_id,
+      user_id: bob.id,
       transaction_type: "sell",
       total_amount: 65.0,
       transaction_fees_amount: 8.5,
@@ -310,8 +314,8 @@ async function main() {
 
   await prisma.transactionAsset.create({
     data: {
-      transaction_id: txSellETB.transaction_id,
-      asset_id: crownZenith.asset_id,
+      transaction_id: txSellETB.id,
+      asset_id: crownZenith.id,
       role: "outgoing",
       market_value_amount: 60.0,
       agreed_value_amount: 65.0,
@@ -322,7 +326,7 @@ async function main() {
   // Bob submitted Mew for grading
   const txGradeSubmit = await prisma.transaction.create({
     data: {
-      user_id: bob.user_id,
+      user_id: bob.id,
       transaction_type: "grade_submission",
       total_amount: 0,
       transaction_fees_amount: 30.0,
@@ -336,8 +340,8 @@ async function main() {
 
   await prisma.transactionAsset.create({
     data: {
-      transaction_id: txGradeSubmit.transaction_id,
-      asset_id: rawMew.asset_id,
+      transaction_id: txGradeSubmit.id,
+      asset_id: rawMew.id,
       role: "outgoing",
       market_value_amount: 18.0,
       agreed_value_amount: 18.0,
@@ -348,7 +352,7 @@ async function main() {
   // Trade: Bob traded Rayquaza for Alice's Eevee Heroes box (pending)
   const txTrade = await prisma.transaction.create({
     data: {
-      user_id: bob.user_id,
+      user_id: bob.id,
       transaction_type: "trade",
       total_amount: 0,
       transaction_fees_amount: 0,
@@ -363,16 +367,16 @@ async function main() {
   await prisma.transactionAsset.createMany({
     data: [
       {
-        transaction_id: txTrade.transaction_id,
-        asset_id: rayquaza.asset_id,
+        transaction_id: txTrade.id,
+        asset_id: rayquaza.id,
         role: "outgoing",
         market_value_amount: 275.0,
         agreed_value_amount: 270.0,
         fees_amount: 0,
       },
       {
-        transaction_id: txTrade.transaction_id,
-        asset_id: eeveeHeroes.asset_id,
+        transaction_id: txTrade.id,
+        asset_id: eeveeHeroes.id,
         role: "incoming",
         market_value_amount: 260.0,
         agreed_value_amount: 270.0,
