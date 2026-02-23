@@ -12,3 +12,112 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum AccountStatus {
+  active
+  inactive
+  suspended
+}
+
+enum AssetType {
+  graded_card
+  graded_guard
+  raw_card
+  sealed_product
+}
+
+enum AssetStatus {
+  owned
+  sold
+  traded
+  grading
+}
+
+enum TransactionType {
+  buy
+  sell
+  trade
+  grade_submission
+  grade_return
+}
+
+enum TransactionStatus {
+  pending
+  completed
+  cancelledq
+}
+
+enum TransactionAssetRole {
+  incoming
+  outgoing
+}
+
+model User {
+  user_id        Int           @id @default(autoincrement())
+  username       String
+  email          String        @unique
+  account_status AccountStatus @default(active)
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
+  deleted_at     DateTime?
+
+  assets       Asset[]
+  transactions Transaction[]
+}
+
+model Asset {
+  asset_id     Int         @id @default(autoincrement())
+  user_id      Int
+  asset_type   AssetType
+  notes        String?
+  metadata     Json?
+  asset_status AssetStatus @default(owned)
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
+  deleted_at   DateTime?
+
+  user              User               @relation(fields: [user_id], references: [user_id])
+  transaction_assets TransactionAsset[]
+
+  @@index([user_id])
+}
+
+model Transaction {
+  transaction_id         Int               @id @default(autoincrement())
+  user_id                Int
+  transaction_type       TransactionType
+  total_amount           Decimal           @db.Decimal(10, 2)
+  transaction_fees_amount Decimal          @db.Decimal(10, 2) @default(0)
+  cash_in_amount         Decimal           @db.Decimal(10, 2) @default(0)
+  cash_out_amount        Decimal           @db.Decimal(10, 2) @default(0)
+  transaction_status     TransactionStatus @default(pending)
+  notes                  String?
+  transacted_at          DateTime
+  created_at             DateTime          @default(now())
+  updated_at             DateTime          @updatedAt
+  deleted_at             DateTime?
+
+  user              User               @relation(fields: [user_id], references: [user_id])
+  transaction_assets TransactionAsset[]
+
+  @@index([user_id])
+}
+
+model TransactionAsset {
+  id                  Int                  @id @default(autoincrement())
+  transaction_id      Int
+  asset_id            Int
+  role                TransactionAssetRole
+  market_value_amount Decimal              @db.Decimal(10, 2)
+  agreed_value_amount Decimal              @db.Decimal(10, 2)
+  fees_amount         Decimal              @db.Decimal(10, 2) @default(0)
+  created_at          DateTime             @default(now())
+  updated_at          DateTime             @updatedAt
+  deleted_at          DateTime?
+
+  transaction Transaction @relation(fields: [transaction_id], references: [transaction_id])
+  asset       Asset       @relation(fields: [asset_id], references: [asset_id])
+
+  @@index([transaction_id])
+  @@index([asset_id])
+}
