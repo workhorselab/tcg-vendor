@@ -3,6 +3,8 @@ import { Button } from "~/components/ui/Button";
 import { Link } from "~/components/ui/Link";
 import { TestLink } from "~/components/TestLink";
 import { TextField } from "~/components/ui/TextField";
+import { auth } from "~/lib/auth";
+import prisma from "~/lib/prisma";
 import type { Route } from "./+types/register";
 
 export function meta({}: Route.MetaArgs) {
@@ -20,14 +22,16 @@ export async function action({ request }: Route.ActionArgs) {
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
-  const errors: {
+  type Errors = {
     firstName?: string;
     lastName?: string;
     email?: string;
     password?: string;
     confirmPassword?: string;
     form?: string;
-  } = {};
+  };
+
+  const errors: Errors = {};
 
   if (!firstName) errors.firstName = "First name is required";
   if (!lastName) errors.lastName = "Last name is required";
@@ -42,11 +46,44 @@ export async function action({ request }: Route.ActionArgs) {
     return data({ errors }, { status: 400 });
   }
 
-  // TODO: Replace with real registration logic
-  // Example: const user = await createUser({ firstName, lastName, email, password });
-  // if (!user) return data({ errors: { form: "An account with this email already exists" } }, { status: 409 });
+  try {
+    const result = await auth.api.signUpEmail({
+      body: {
+        email,
+        password,
+        name: `${firstName} ${lastName}`,
+      },
+    });
 
-  return redirect("/login");
+    if (!result) {
+      return data(
+        { errors: { form: "Failed to create account" } as Errors },
+        { status: 500 }
+      );
+    }
+
+    await prisma.user.update({
+      where: { id: result.user.id },
+      data: { username: email.split("@")[0] },
+    });
+
+    return redirect("/login");
+  } catch (error: any) {
+    console.error("Registration error:", error);
+
+    // Check if email already exists
+    if (error.message?.includes("unique") || error.message?.includes("already exists")) {
+      return data(
+        { errors: { form: "An account with this email already exists" } as Errors },
+        { status: 409 }
+      );
+    }
+
+    return data(
+      { errors: { form: "Failed to create account. Please try again." } as Errors },
+      { status: 500 }
+    );
+  }
 }
 
 export default function Register() {
@@ -56,13 +93,29 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="w-full max-w-[420px] bg-[#1a1a1a] rounded-xl p-8">
-        <div className="mb-6">
-          <h1 className="text-xl font-semibold text-white mb-1">
+      <div className="w-full max-w-[380px]">
+        {/* Icon */}
+        <div className="flex justify-center mb-6">
+          <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center">
+            <svg className="w-8 h-8 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Title and Subtitle */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-semibold text-white mb-2">
             Create an account
           </h1>
           <p className="text-gray-400 text-sm">
-            Enter your information below to create your account
+            Already have an account?{" "}
+            <TestLink
+              to="/login"
+              className="text-white hover:text-gray-200 underline"
+            >
+              Sign in
+            </TestLink>
           </p>
         </div>
 
@@ -73,7 +126,7 @@ export default function Register() {
         )}
 
         <Form method="post" className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <TextField
               type="text"
               name="firstName"
@@ -82,7 +135,7 @@ export default function Register() {
               isRequired
               isInvalid={!!actionData?.errors?.firstName}
               errorMessage={actionData?.errors?.firstName}
-              className="[&_label]:text-white [&_label]:text-sm [&_label]:font-normal [&_input]:bg-transparent [&_input]:border-gray-700 [&_input]:text-gray-300 [&_input]:placeholder-gray-500"
+              className="[&_label]:text-white [&_label]:text-sm [&_label]:font-medium [&_label]:mb-2 [&_input]:bg-white [&_input]:border-0 [&_input]:text-black [&_input]:placeholder-gray-400 [&_input]:h-11"
             />
 
             <TextField
@@ -93,7 +146,7 @@ export default function Register() {
               isRequired
               isInvalid={!!actionData?.errors?.lastName}
               errorMessage={actionData?.errors?.lastName}
-              className="[&_label]:text-white [&_label]:text-sm [&_label]:font-normal [&_input]:bg-transparent [&_input]:border-gray-700 [&_input]:text-gray-300 [&_input]:placeholder-gray-500"
+              className="[&_label]:text-white [&_label]:text-sm [&_label]:font-medium [&_label]:mb-2 [&_input]:bg-white [&_input]:border-0 [&_input]:text-black [&_input]:placeholder-gray-400 [&_input]:h-11"
             />
           </div>
 
@@ -105,7 +158,7 @@ export default function Register() {
             isRequired
             isInvalid={!!actionData?.errors?.email}
             errorMessage={actionData?.errors?.email}
-            className="[&_label]:text-white [&_label]:text-sm [&_label]:font-normal [&_input]:bg-transparent [&_input]:border-gray-700 [&_input]:text-gray-300 [&_input]:placeholder-gray-500"
+            className="[&_label]:text-white [&_label]:text-sm [&_label]:font-medium [&_label]:mb-2 [&_input]:bg-white [&_input]:border-0 [&_input]:text-black [&_input]:placeholder-gray-400 [&_input]:h-11"
           />
 
           <TextField
@@ -116,7 +169,7 @@ export default function Register() {
             isRequired
             isInvalid={!!actionData?.errors?.password}
             errorMessage={actionData?.errors?.password}
-            className="[&_label]:text-white [&_label]:text-sm [&_label]:font-normal [&_input]:bg-transparent [&_input]:border-gray-700 [&_input]:text-gray-300 [&_input]:placeholder-gray-500"
+            className="[&_label]:text-white [&_label]:text-sm [&_label]:font-medium [&_label]:mb-2 [&_input]:bg-white [&_input]:border-0 [&_input]:text-black [&_input]:placeholder-gray-400 [&_input]:h-11"
           />
 
           <TextField
@@ -127,22 +180,44 @@ export default function Register() {
             isRequired
             isInvalid={!!actionData?.errors?.confirmPassword}
             errorMessage={actionData?.errors?.confirmPassword}
-            className="[&_label]:text-white [&_label]:text-sm [&_label]:font-normal [&_input]:bg-transparent [&_input]:border-gray-700 [&_input]:text-gray-300 [&_input]:placeholder-gray-500"
+            className="[&_label]:text-white [&_label]:text-sm [&_label]:font-medium [&_label]:mb-2 [&_input]:bg-white [&_input]:border-0 [&_input]:text-black [&_input]:placeholder-gray-400 [&_input]:h-11"
           />
 
-          <div className="space-y-2 pt-2">
+          <Button
+            type="submit"
+            className="w-full bg-white hover:bg-gray-100 text-black border-0 h-11 font-medium"
+            isDisabled={isSubmitting}
+          >
+            {isSubmitting ? "Creating account..." : "Create Account"}
+          </Button>
+
+          {/* Or Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-700"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-black text-gray-400">Or</span>
+            </div>
+          </div>
+
+          {/* Social Auth Buttons */}
+          <div className="grid grid-cols-2 gap-3">
             <Button
-              type="submit"
-              className="w-full bg-gray-200 hover:bg-white text-black border-0"
-              isDisabled={isSubmitting}
+              type="button"
+              variant="secondary"
+              className="border-gray-700 hover:border-gray-600 text-white bg-transparent flex items-center justify-center gap-2 h-11 text-sm"
             >
-              {isSubmitting ? "Creating account..." : "Create Account"}
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+              </svg>
+              <span>Continue with Apple</span>
             </Button>
 
             <Button
               type="button"
               variant="secondary"
-              className="w-full border-gray-700 hover:border-gray-600 text-white bg-transparent flex items-center justify-center gap-2"
+              className="border-gray-700 hover:border-gray-600 text-white bg-transparent flex items-center justify-center gap-2 h-11 text-sm"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path
@@ -162,24 +237,13 @@ export default function Register() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Sign up with Google
+              <span>Continue with Google</span>
             </Button>
           </div>
         </Form>
 
+        {/* Terms and Privacy */}
         <div className="mt-6 text-center">
-          <p className="text-gray-400 text-sm">
-            Already have an account?{" "}
-            <TestLink
-              to="/login"
-              className="text-white hover:text-gray-200 underline"
-            >
-              Sign in
-            </TestLink>
-          </p>
-        </div>
-
-        <div className="mt-4 text-center">
           <p className="text-gray-500 text-xs">
             By clicking continue, you agree to our{" "}
             <Link href="#" className="underline hover:text-gray-400">

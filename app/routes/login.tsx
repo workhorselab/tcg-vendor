@@ -1,8 +1,15 @@
-import { data, Form, redirect, useActionData, useNavigation } from "react-router";
+import {
+  data,
+  Form,
+  redirect,
+  useActionData,
+  useNavigation,
+} from "react-router";
 import { TestLink } from "~/components/TestLink";
 import { Button } from "~/components/ui/Button";
 import { Link } from "~/components/ui/Link";
 import { TextField } from "~/components/ui/TextField";
+import { auth } from "~/lib/auth";
 import type { Route } from "./+types/login";
 
 export function meta({}: Route.MetaArgs) {
@@ -17,7 +24,9 @@ export async function action({ request }: Route.ActionArgs) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 
-  const errors: { email?: string; password?: string; form?: string } = {};
+  type Errors = { email?: string; password?: string; form?: string };
+
+  const errors: Errors = {};
 
   if (!email) errors.email = "Email is required";
   if (!password) errors.password = "Password is required";
@@ -26,11 +35,36 @@ export async function action({ request }: Route.ActionArgs) {
     return data({ errors }, { status: 400 });
   }
 
-  // TODO: Replace with real authentication logic
-  // Example: const user = await authenticateUser(email, password);
-  // if (!user) return data({ errors: { form: "Invalid email or password" } }, { status: 401 });
+  try {
+    const session = await auth.api.signInEmail({
+      body: {
+        email,
+        password,
+      },
+    });
 
-  return redirect("/");
+    if (!session) {
+      return data(
+        { errors: { form: "Invalid email or password" } as Errors },
+        { status: 401 },
+      );
+    }
+
+    // Create response with session cookie
+    const headers = new Headers();
+    headers.append(
+      "Set-Cookie",
+      `better-auth.session_token=${session.token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 7}`,
+    );
+
+    return redirect("/app", { headers });
+  } catch (error) {
+    console.error("Login error:", error);
+    return data(
+      { errors: { form: "Invalid email or password" } as Errors },
+      { status: 401 },
+    );
+  }
 }
 
 export default function Login() {
@@ -40,13 +74,29 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="w-full max-w-[420px] bg-[#1a1a1a] rounded-xl p-8">
-        <div className="mb-6">
-          <h1 className="text-xl font-semibold text-white mb-1">
-            Login to your account
+      <div className="w-full max-w-[380px]">
+        {/* Icon */}
+        <div className="flex justify-center mb-6">
+          <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center">
+            <svg className="w-8 h-8 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Title and Subtitle */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-semibold text-white mb-2">
+            Welcome to TradeUp
           </h1>
           <p className="text-gray-400 text-sm">
-            Enter your email below to login to your account
+            Don't have an account?{" "}
+            <TestLink
+              to="/register"
+              className="text-white hover:text-gray-200 underline"
+            >
+              Sign up
+            </TestLink>
           </p>
         </div>
 
@@ -65,38 +115,55 @@ export default function Login() {
             isRequired
             isInvalid={!!actionData?.errors?.email}
             errorMessage={actionData?.errors?.email}
-            className="[&_label]:text-white [&_label]:text-sm [&_label]:font-normal [&_input]:bg-transparent [&_input]:border-gray-700 [&_input]:text-gray-300 [&_input]:placeholder-gray-500"
+            className="[&_label]:text-white [&_label]:text-sm [&_label]:font-medium [&_label]:mb-2 [&_input]:bg-white [&_input]:border-0 [&_input]:text-black [&_input]:placeholder-gray-400 [&_input]:h-11"
           />
 
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-white text-sm">Password</label>
-              <Link
-                href="#"
-                className="text-sm text-gray-400 hover:text-white no-underline"
-              >
-                Forgot your password?
-              </Link>
+          <TextField
+            type="password"
+            name="password"
+            label="Password"
+            placeholder="Enter your password"
+            isRequired
+            isInvalid={!!actionData?.errors?.password}
+            errorMessage={actionData?.errors?.password}
+            className="[&_label]:text-white [&_label]:text-sm [&_label]:font-medium [&_label]:mb-2 [&_input]:bg-white [&_input]:border-0 [&_input]:text-black [&_input]:placeholder-gray-400 [&_input]:h-11"
+          />
+
+          <Button
+            type="submit"
+            className="w-full bg-white hover:bg-gray-100 text-black border-0 h-11 font-medium"
+            isDisabled={isSubmitting}
+          >
+            {isSubmitting ? "Logging in..." : "Login"}
+          </Button>
+
+          {/* Or Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-700"></div>
             </div>
-            <TextField
-              type="password"
-              name="password"
-              isRequired
-              isInvalid={!!actionData?.errors?.password}
-              errorMessage={actionData?.errors?.password}
-              className="[&_input]:bg-transparent [&_input]:border-gray-700 [&_input]:text-gray-300 [&_input]:placeholder-gray-500"
-            />
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-black text-gray-400">Or</span>
+            </div>
           </div>
 
-          <div className="space-y-2 pt-2">
-            <Button type="submit" className="w-full" isDisabled={isSubmitting}>
-              {isSubmitting ? "Logging in..." : "Login"}
+          {/* Social Auth Buttons */}
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              className="border-gray-700 hover:border-gray-600 text-white bg-transparent flex items-center justify-center gap-2 h-11 text-sm"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+              </svg>
+              <span>Continue with Apple</span>
             </Button>
 
             <Button
               type="button"
               variant="secondary"
-              className="w-full border-gray-700 hover:border-gray-600 text-white bg-transparent flex items-center justify-center gap-2"
+              className="border-gray-700 hover:border-gray-600 text-white bg-transparent flex items-center justify-center gap-2 h-11 text-sm"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path
@@ -116,20 +183,22 @@ export default function Login() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              Login with Google
+              <span>Continue with Google</span>
             </Button>
           </div>
         </Form>
 
+        {/* Terms and Privacy */}
         <div className="mt-6 text-center">
-          <p className="text-gray-400 text-sm">
-            Don't have an account?{" "}
-            <TestLink
-              to="/register"
-              className="text-white hover:text-gray-200 underline"
-            >
-              Sign up
-            </TestLink>
+          <p className="text-gray-500 text-xs">
+            By clicking continue, you agree to our{" "}
+            <Link href="#" className="underline hover:text-gray-400">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="#" className="underline hover:text-gray-400">
+              Privacy Policy
+            </Link>
           </p>
         </div>
       </div>
