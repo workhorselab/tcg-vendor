@@ -25,6 +25,17 @@ export default function Home() {
                   alt="2003 Pokemon Skyridge Charizard Holo #146 PSA Gem Mint 10"
                   className="w-full rounded-2xl shadow-2xl shadow-black/50"
                 />
+                <div className="absolute -bottom-4 -right-4 bg-[#0a0a0a]/90 backdrop-blur-sm border border-green-500/20 rounded-xl px-3 py-2 flex items-center gap-2 shadow-lg">
+                  <div className="w-7 h-7 bg-green-500/10 rounded-lg flex items-center justify-center">
+                    <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-green-400 text-sm font-semibold leading-none">+24.3%</p>
+                    <p className="text-gray-500 text-[10px] leading-tight mt-0.5">12 mo.</p>
+                  </div>
+                </div>
               </div>
 
               {/* Stats */}
