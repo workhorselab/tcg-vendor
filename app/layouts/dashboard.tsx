@@ -1,26 +1,36 @@
 import {
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  Settings,
-  LogOut,
   ChevronLeft,
   ChevronRight,
+  LayoutDashboard,
+  LogOut,
+  Package,
+  Settings,
+  ShoppingCart,
 } from "lucide-react";
 import { useState } from "react";
-import { data, NavLink, Outlet, redirect, useNavigation } from "react-router";
+import { Form, NavLink, Outlet, redirect, useNavigation } from "react-router";
+import { auth } from "~/lib/auth";
+import { requireAuth } from "~/lib/session.server";
 import type { Route } from "./+types/dashboard";
 
 export async function loader({ request }: Route.LoaderArgs) {
-  // TODO: Replace with real auth check
-  // Example:
-  // const session = await getSession(request.headers.get("Cookie"));
-  // if (!session.has("userId")) {
-  //   return redirect("/login");
-  // }
-  // return data({ user: await getUser(session.get("userId")) });
+  const session = await requireAuth(request);
+  return { user: session.user };
+}
 
-  return data({ user: { name: "Test User", email: "test@example.com" } });
+export async function action({ request }: Route.ActionArgs) {
+  const response = await auth.api.signOut({
+    headers: request.headers,
+    asResponse: true,
+  });
+
+  const headers = new Headers();
+  const setCookie = response.headers.get("set-cookie");
+  if (setCookie) {
+    headers.append("Set-Cookie", setCookie);
+  }
+
+  return redirect("/login", { headers });
 }
 
 const navItems = [
@@ -30,9 +40,7 @@ const navItems = [
   { to: "/app/settings", label: "Settings", icon: Settings },
 ];
 
-export default function DashboardLayout({
-  loaderData,
-}: Route.ComponentProps) {
+export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
   const [collapsed, setCollapsed] = useState(false);
   const navigation = useNavigation();
   const isNavigating = navigation.state === "loading";
@@ -85,17 +93,17 @@ export default function DashboardLayout({
                 </p>
               </div>
             )}
-            <button
-              onClick={() => {
-                // TODO: Implement logout
-              }}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors w-full ${
-                collapsed ? "justify-center" : ""
-              }`}
-            >
-              <LogOut className="w-5 h-5 shrink-0" />
-              {!collapsed && <span>Log out</span>}
-            </button>
+            <Form method="post">
+              <button
+                type="submit"
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors w-full ${
+                  collapsed ? "justify-center" : ""
+                }`}
+              >
+                <LogOut className="w-5 h-5 shrink-0" />
+                {!collapsed && <span>Log out</span>}
+              </button>
+            </Form>
           </div>
         </aside>
 

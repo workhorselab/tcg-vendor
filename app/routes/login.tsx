@@ -10,7 +10,14 @@ import { Button } from "~/components/ui/Button";
 import { Link } from "~/components/ui/Link";
 import { TextField } from "~/components/ui/TextField";
 import { auth } from "~/lib/auth";
+import { getSession } from "~/lib/session.server";
 import type { Route } from "./+types/login";
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await getSession(request);
+  if (session) throw redirect("/app");
+  return {};
+}
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -36,26 +43,23 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   try {
-    const session = await auth.api.signInEmail({
-      body: {
-        email,
-        password,
-      },
+    const response = await auth.api.signInEmail({
+      body: { email, password },
+      asResponse: true,
     });
 
-    if (!session) {
+    if (!response.ok) {
       return data(
         { errors: { form: "Invalid email or password" } as Errors },
         { status: 401 },
       );
     }
 
-    // Create response with session cookie
+    const setCookie = response.headers.get("set-cookie");
     const headers = new Headers();
-    headers.append(
-      "Set-Cookie",
-      `better-auth.session_token=${session.token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24 * 7}`,
-    );
+    if (setCookie) {
+      headers.append("Set-Cookie", setCookie);
+    }
 
     return redirect("/app", { headers });
   } catch (error) {
@@ -78,8 +82,18 @@ export default function Login() {
         {/* Icon */}
         <div className="flex justify-center mb-6">
           <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center">
-            <svg className="w-8 h-8 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            <svg
+              className="w-8 h-8 text-black"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
             </svg>
           </div>
         </div>
@@ -155,7 +169,7 @@ export default function Login() {
               className="border-gray-700 hover:border-gray-600 text-white bg-transparent flex items-center justify-center gap-2 h-11 text-sm"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
               </svg>
               <span>Continue with Apple</span>
             </Button>

@@ -13,6 +13,8 @@ export default [
     route("register", "routes/register.tsx"),
   ]),
 
+  route("api/auth/*", "routes/api.auth.$.ts"),
+
   route("app", "layouts/dashboard.tsx", [
     index("routes/dashboard/index.tsx"),
     route("inventory", "routes/dashboard/inventory.tsx"),
