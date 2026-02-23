@@ -49,6 +49,20 @@ export async function action({ request }: Route.ActionArgs) {
     });
 
     if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      const code = body?.code;
+
+      if (code === "EMAIL_NOT_VERIFIED") {
+        return data(
+          {
+            errors: {
+              form: "Please verify your email before signing in. Check your inbox for a verification link.",
+            } as Errors,
+          },
+          { status: 403 },
+        );
+      }
+
       return data(
         { errors: { form: "Invalid email or password" } as Errors },
         { status: 401 },

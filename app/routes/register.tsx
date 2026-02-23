@@ -13,6 +13,19 @@ import { auth } from "~/lib/auth";
 import { getSession } from "~/lib/session.server";
 import type { Route } from "./+types/register";
 
+type ActionData = {
+  errors?: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+    form?: string;
+  };
+  success?: boolean;
+  email?: string;
+};
+
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request);
   if (session) throw redirect("/app");
@@ -34,16 +47,7 @@ export async function action({ request }: Route.ActionArgs) {
   const password = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
-  type Errors = {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    password?: string;
-    confirmPassword?: string;
-    form?: string;
-  };
-
-  const errors: Errors = {};
+  const errors: ActionData["errors"] = {};
 
   if (!firstName) errors.firstName = "First name is required";
   if (!lastName) errors.lastName = "Last name is required";
@@ -55,7 +59,7 @@ export async function action({ request }: Route.ActionArgs) {
     errors.confirmPassword = "Passwords do not match";
 
   if (Object.keys(errors).length > 0) {
-    return data({ errors }, { status: 400 });
+    return data({ errors } satisfies ActionData, { status: 400 });
   }
 
   try {
@@ -75,53 +79,83 @@ export async function action({ request }: Route.ActionArgs) {
       if (response.status === 409 || message.includes("already")) {
         return data(
           {
-            errors: {
-              form: "An account with this email already exists",
-            } as Errors,
-          },
+            errors: { form: "An account with this email already exists" },
+          } satisfies ActionData,
           { status: 409 },
         );
       }
 
       return data(
         {
-          errors: {
-            form: "Failed to create account. Please try again.",
-          } as Errors,
-        },
+          errors: { form: "Failed to create account. Please try again." },
+        } satisfies ActionData,
         { status: response.status },
       );
     }
 
-    const headers = new Headers();
-    const setCookie = response.headers.get("set-cookie");
-    if (setCookie) {
-      headers.append("Set-Cookie", setCookie);
-    }
-
-    return redirect("/app", { headers });
+    return data({
+      success: true,
+      email,
+    } satisfies ActionData);
   } catch (error) {
     console.error("Registration error:", error);
     return data(
       {
-        errors: {
-          form: "Failed to create account. Please try again.",
-        } as Errors,
-      },
+        errors: { form: "Failed to create account. Please try again." },
+      } satisfies ActionData,
       { status: 500 },
     );
   }
 }
 
 export default function Register() {
-  const actionData = useActionData<typeof action>();
+  const actionData = useActionData<typeof action>() as ActionData | undefined;
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
+
+  if (actionData?.success) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
+        <div className="w-full max-w-[380px] text-center">
+          <div className="flex justify-center mb-6">
+            <div className="w-14 h-14 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
+              <svg
+                className="w-7 h-7 text-green-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+          </div>
+          <h1 className="text-2xl font-semibold text-white mb-2">
+            Check your email
+          </h1>
+          <p className="text-gray-400 text-sm mb-6">
+            We sent a verification link to{" "}
+            <span className="text-white font-medium">{actionData.email}</span>.
+            Click the link to activate your account.
+          </p>
+          <TestLink
+            to="/login"
+            className="text-sm text-gray-400 hover:text-white underline"
+          >
+            Back to sign in
+          </TestLink>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <div className="w-full max-w-[380px]">
-        {/* Icon */}
         <div className="flex justify-center mb-6">
           <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center">
             <svg
@@ -140,7 +174,6 @@ export default function Register() {
           </div>
         </div>
 
-        {/* Title and Subtitle */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-semibold text-white mb-2">
             Create an account
