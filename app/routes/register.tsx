@@ -4,7 +4,6 @@ import { Link } from "~/components/ui/Link";
 import { TestLink } from "~/components/TestLink";
 import { TextField } from "~/components/ui/TextField";
 import { auth } from "~/lib/auth";
-import prisma from "~/lib/prisma";
 import type { Route } from "./+types/register";
 
 export function meta({}: Route.MetaArgs) {
@@ -61,11 +60,6 @@ export async function action({ request }: Route.ActionArgs) {
         { status: 500 }
       );
     }
-
-    await prisma.user.update({
-      where: { id: result.user.id },
-      data: { username: email.split("@")[0] },
-    });
 
     return redirect("/login");
   } catch (error: any) {
