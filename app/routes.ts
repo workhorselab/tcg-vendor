@@ -18,6 +18,7 @@ export default [
   route("app", "layouts/dashboard.tsx", [
     index("routes/dashboard/index.tsx"),
     route("inventory", "routes/dashboard/inventory.tsx"),
+    route("inventory/new", "routes/dashboard/inventory.new.tsx"),
     route("orders", "routes/dashboard/orders.tsx"),
     route("settings", "routes/dashboard/settings.tsx"),
   ]),

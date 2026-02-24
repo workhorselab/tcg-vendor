@@ -1,6 +1,4 @@
 import {
-  ChevronLeft,
-  ChevronRight,
   LayoutDashboard,
   LogOut,
   Package,
@@ -8,7 +6,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { useState } from "react";
-import { Form, NavLink, Outlet, redirect, useNavigation } from "react-router";
+import { Form, NavLink, Outlet, redirect } from "react-router";
 import { auth } from "~/lib/auth";
 import { requireAuth } from "~/lib/session.server";
 import type { Route } from "./+types/dashboard";
@@ -42,88 +40,158 @@ const navItems = [
 
 export default function DashboardLayout({ loaderData }: Route.ComponentProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const navigation = useNavigation();
-  const isNavigating = navigation.state === "loading";
 
   return (
-    <div className="flex h-screen bg-[#0a0a0a] text-white overflow-hidden">
-      <div className="relative shrink-0">
-        <aside
-          className={`${
-            collapsed ? "w-16" : "w-60"
-          } flex flex-col h-full border-r border-gray-800 bg-[#0a0a0a] transition-all duration-200`}
-        >
-          <div className="flex items-center gap-2 px-4 h-14 border-b border-gray-800">
-            <div className="w-8 h-8 bg-linear-to-br from-orange-500 to-pink-500 rounded-lg flex items-center justify-center shrink-0">
-              <span className="text-white font-bold text-lg">T</span>
+    <div className="flex h-screen bg-black text-white overflow-hidden">
+      {/* Sidebar */}
+      <aside
+        className={`${
+          collapsed ? "w-[72px]" : "w-[260px]"
+        } bg-[#18181b] border-r border-gray-800 flex flex-col shrink-0 transition-all duration-300`}
+      >
+        {/* Logo */}
+        <div className="h-[68px] px-4 flex items-center border-b border-gray-800">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-blue-600 rounded flex items-center justify-center shrink-0">
+              <svg
+                className="w-4 h-4 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
             </div>
             {!collapsed && (
-              <span className="font-semibold text-lg truncate">TradeUp</span>
+              <span className="text-white font-semibold text-sm uppercase tracking-wide">
+                TradeUp
+              </span>
             )}
           </div>
+        </div>
 
-          <nav className="flex-1 py-3 px-2 space-y-1 overflow-y-auto">
-            {navItems.map(({ to, label, icon: Icon, end }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-white/10 text-white"
-                      : "text-gray-400 hover:text-white hover:bg-white/5"
-                  } ${collapsed ? "justify-center" : ""}`
-                }
-              >
-                <Icon className="w-5 h-5 shrink-0" />
-                {!collapsed && <span className="truncate">{label}</span>}
-              </NavLink>
-            ))}
-          </nav>
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+          {/* Dashboard */}
+          <NavLink
+            to="/app"
+            end
+            className={({ isActive }) =>
+              `flex items-center ${collapsed ? "justify-center" : "gap-3"} px-3 py-2 mb-4 rounded-md no-underline transition-colors ${
+                isActive
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-400 hover:text-white hover:bg-gray-900"
+              }`
+            }
+          >
+            <LayoutDashboard className="w-4 h-4 shrink-0" />
+            {!collapsed && <span className="text-sm font-medium">Dashboard</span>}
+          </NavLink>
 
-          <div className="border-t border-gray-800 p-2 space-y-1">
+          {/* Main Section */}
+          <div className="mb-6">
             {!collapsed && (
-              <div className="px-3 py-2">
-                <p className="text-sm font-medium truncate">
-                  {loaderData.user.name}
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {loaderData.user.email}
-                </p>
+              <div className="px-3 mb-2">
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Main
+                </div>
               </div>
             )}
-            <Form method="post">
-              <button
-                type="submit"
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors w-full ${
-                  collapsed ? "justify-center" : ""
-                }`}
+            <div className="space-y-1">
+              <NavLink
+                to="/app/inventory"
+                className={({ isActive }) =>
+                  `flex items-center ${collapsed ? "justify-center" : "gap-3"} px-3 py-2 rounded-md no-underline transition-colors ${
+                    isActive
+                      ? "text-white bg-gray-900"
+                      : "text-gray-400 hover:text-white hover:bg-gray-900"
+                  }`
+                }
               >
-                <LogOut className="w-5 h-5 shrink-0" />
-                {!collapsed && <span>Log out</span>}
-              </button>
-            </Form>
+                <Package className="w-4 h-4 shrink-0" />
+                {!collapsed && <span className="text-sm">Inventory</span>}
+              </NavLink>
+
+              <NavLink
+                to="/app/orders"
+                className={({ isActive }) =>
+                  `flex items-center ${collapsed ? "justify-center" : "gap-3"} px-3 py-2 rounded-md no-underline transition-colors ${
+                    isActive
+                      ? "text-white bg-gray-900"
+                      : "text-gray-400 hover:text-white hover:bg-gray-900"
+                  }`
+                }
+              >
+                <ShoppingCart className="w-4 h-4 shrink-0" />
+                {!collapsed && <span className="text-sm">Orders</span>}
+              </NavLink>
+            </div>
           </div>
-        </aside>
 
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="absolute top-7 -right-3 z-40 w-6 h-6 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
-        >
-          {collapsed ? (
-            <ChevronRight className="w-3.5 h-3.5" />
-          ) : (
-            <ChevronLeft className="w-3.5 h-3.5" />
-          )}
-        </button>
-      </div>
+          {/* Settings Section */}
+          <div className="mb-6">
+            {!collapsed && (
+              <div className="px-3 mb-2">
+                <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Settings
+                </div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <NavLink
+                to="/app/settings"
+                className={({ isActive }) =>
+                  `flex items-center ${collapsed ? "justify-center" : "gap-3"} px-3 py-2 rounded-md no-underline transition-colors ${
+                    isActive
+                      ? "text-white bg-gray-900"
+                      : "text-gray-400 hover:text-white hover:bg-gray-900"
+                  }`
+                }
+              >
+                <Settings className="w-4 h-4 shrink-0" />
+                {!collapsed && <span className="text-sm">Settings</span>}
+              </NavLink>
+            </div>
+          </div>
+        </nav>
 
-      <main className="relative flex-1 overflow-y-auto">
-        {isNavigating && (
-          <div className="absolute top-0 left-0 right-0 h-0.5 bg-orange-500 animate-pulse z-50" />
-        )}
-        <Outlet />
+        {/* User Profile */}
+        <div className="px-3 py-4 border-t border-gray-800">
+          <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"} px-3 py-2 mb-2 rounded-md`}>
+            <div className="w-7 h-7 bg-gray-700 rounded-full flex items-center justify-center text-xs font-medium text-white shrink-0">
+              {loaderData.user.name?.charAt(0).toUpperCase() || "U"}
+            </div>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-white truncate">
+                  {loaderData.user.name || "User"}
+                </div>
+                <div className="text-xs text-gray-500 truncate">
+                  {loaderData.user.email}
+                </div>
+              </div>
+            )}
+          </div>
+          <Form method="post">
+            <button
+              type="submit"
+              className={`w-full flex items-center ${collapsed ? "justify-center" : "gap-3"} px-3 py-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-900 transition-colors text-sm`}
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              {!collapsed && <span>Log out</span>}
+            </button>
+          </Form>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-auto">
+        <Outlet context={{ collapsed, setCollapsed }} />
       </main>
     </div>
   );
