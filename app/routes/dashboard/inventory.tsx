@@ -1,61 +1,62 @@
 import { Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useOutletContext } from "react-router";
 import { DataTable } from "~/components/DataTable";
 import { PageContent } from "~/components/PageContent";
 import { PageHeader } from "~/components/PageHeader";
 import { TestLink } from "~/components/TestLink";
-import { type InventoryItem, readInventoryItems } from "~/lib/inventory.client";
+import { db } from "~/lib/prisma";
+import { requireAuth } from "~/lib/session.server";
 import type { Route } from "./+types/inventory";
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Inventory - TCG Vendor" }];
 }
 
-const mockItems: InventoryItem[] = [
-  {
-    id: 1,
-    name: "Charizard VMAX",
-    set: "Shining Fates",
-    qty: 3,
-    price: "$120.00",
-  },
-  {
-    id: 2,
-    name: "Pikachu VMAX",
-    set: "Vivid Voltage",
-    qty: 12,
-    price: "$45.00",
-  },
-  { id: 3, name: "Mewtwo GX", set: "Shining Legends", qty: 7, price: "$28.50" },
-  {
-    id: 4,
-    name: "Lugia V Alt Art",
-    set: "Silver Tempest",
-    qty: 1,
-    price: "$210.00",
-  },
-  {
-    id: 5,
-    name: "Umbreon VMAX Alt Art",
-    set: "Evolving Skies",
-    qty: 2,
-    price: "$340.00",
-  },
-];
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await requireAuth(request);
 
-export default function Inventory() {
+  const assets = await db.asset.findMany({
+    where: {
+      user_id: session.user.id,
+      deleted_at: null,
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  });
+
+  return { assets };
+}
+
+interface InventoryItem {
+  id: number;
+  name: string;
+  set: string;
+  qty: number;
+  price: string;
+  type: string;
+}
+
+export default function Inventory({ loaderData }: Route.ComponentProps) {
   const { collapsed, setCollapsed } = useOutletContext<{
     collapsed: boolean;
     setCollapsed: (value: boolean) => void;
   }>();
-  const [savedItems, setSavedItems] = useState<InventoryItem[]>([]);
 
-  useEffect(() => {
-    setSavedItems(readInventoryItems());
-  }, []);
-
-  const items = useMemo(() => [...savedItems, ...mockItems], [savedItems]);
+  const items = useMemo(() => {
+    return loaderData.assets.map((asset) => {
+      const metadata = asset.metadata as any;
+      return {
+        id: asset.id,
+        name: metadata?.name || "Unknown",
+        set: metadata?.set || "Unknown",
+        qty: metadata?.quantity || 0,
+        price: metadata?.price || "$0.00",
+        type: asset.asset_type,
+      };
+    });
+  }, [loaderData.assets]);
   const columns = useMemo(
     () => [
       {
@@ -70,6 +71,13 @@ export default function Inventory() {
         header: "Set",
         render: (item: InventoryItem) => (
           <span className="text-gray-400">{item.set}</span>
+        ),
+      },
+      {
+        key: "type",
+        header: "Type",
+        render: (item: InventoryItem) => (
+          <span className="text-gray-400 capitalize">{item.type.replace('_', ' ')}</span>
         ),
       },
       {
@@ -111,15 +119,6 @@ export default function Inventory() {
 
       <PageContent>
         <div className="space-y-6">
-          {/* <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-              <TextField
-                placeholder="Search inventory..."
-                className="w-full [&_input]:bg-[#141414] [&_input]:border-gray-800 [&_input]:text-gray-300 [&_input]:placeholder-gray-500 [&_input]:pl-9 [&_input]:pr-4"
-              />
-            </div>
-          </div> */}
           <DataTable
             title="Inventory Items"
             description="Your current stock and pricing."
