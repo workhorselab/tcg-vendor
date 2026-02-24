@@ -5,7 +5,7 @@ import { DataTable } from "~/components/DataTable";
 import { PageContent } from "~/components/PageContent";
 import { PageHeader } from "~/components/PageHeader";
 import { TestLink } from "~/components/TestLink";
-import { db } from "~/lib/prisma";
+import { db } from "~/lib/prisma.server";
 import { requireAuth } from "~/lib/session.server";
 import type { Route } from "./+types/inventory";
 

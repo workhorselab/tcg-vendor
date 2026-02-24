@@ -2,7 +2,7 @@ import { Form, redirect, useOutletContext } from "react-router";
 import { PageContent } from "~/components/PageContent";
 import { PageHeader } from "~/components/PageHeader";
 import { Button } from "~/components/ui/Button";
-import { db } from "~/lib/prisma";
+import { db } from "~/lib/prisma.server";
 import { requireAuth } from "~/lib/session.server";
 import type { Route } from "./+types/inventory.new";
 
